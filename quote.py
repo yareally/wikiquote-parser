@@ -39,6 +39,7 @@ class Quote:
     def to_xml(self, xml_skeleton=XML) -> str:
         """
         Converts the quote to xml
+
         @param xml_skeleton: template to how the xml should map to the data.
          Example: <quote id="{}" author="{}" cats="{}" ref="{}">{}</quote>
         @return: xml string with data formatted in it

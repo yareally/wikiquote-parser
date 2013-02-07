@@ -81,6 +81,7 @@ def parse_cats_page(xml: minidom.Document, start_tag:str) -> list:
 
     elements = xml.getElementsByTagName(start_tag)
     categories = []
+    # categories only useful to wikipedia. Filter them out.
     filter_list = ['People cleanup', 'Pages with inadequate citations']
 
     for cat_elem in elements:

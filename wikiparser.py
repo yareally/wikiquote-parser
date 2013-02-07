@@ -66,8 +66,7 @@ def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
 
     # remove some other crap found in the quotes
     quote_line = re.sub('\[\[|\]\]|<!-- ?| ?-->', '', quote_line)
-    quote_line = re.sub('\'{2,3}', '"', quote_line)
-    quote_line = re.sub('"{2,}', '"', quote_line)
+    quote_line = re.sub('"{2,}|\'{2,3}', '"', quote_line)
     quote_line = re.sub('<br> ?', '\n', quote_line)
 
     return Quote(id=id, quote=quote_line, author=author, cats=cats)
@@ -75,7 +74,7 @@ def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
 def parse_cats_page(xml: minidom.Document, start_tag:str) -> list:
     """
     Read through the page with categories and parse them out
-    @param xml:
+    @param xml: the xml dom object
     @param start_tag: xml tag to start reading elements from
     @return: list of categories
     """
@@ -112,8 +111,6 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
     quotes = []
 
     for line in page_data:
-        line = str(line) # stupid intellij can't figure out this is a string without this
-
         # remove the denotation chars for a quote
         matches = re.match('\* ([\S ]+)', line)
 

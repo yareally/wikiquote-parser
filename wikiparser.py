@@ -126,7 +126,7 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
 
     return quotes
 
-def dump_xml(xml_data:list, to_file=False, file_name=''):
+def dump_xml(xml_data:list, to_file=False, file_name='') -> None:
     """
     Dumps xml data to stdout or to a file
     @param xml_data: list of xml elements
@@ -158,4 +158,3 @@ if __name__ == "__main__":
     cats_page = fetch_page(CAT_URL.format(LANG, request.quote(URL)))
     cat_list = parse_cats_page(cats_page, CAT_XML_TAG)
     quote_list = parse_quote_page(quote_page, QUOTE_XML_TAG, cat_list)
-    dump_xml(quote_list, to_file=True)

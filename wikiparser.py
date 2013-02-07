@@ -65,7 +65,7 @@ def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
     quote_line = re.sub('\[\[|\]\]|<!-- ?| ?-->', '', quote_line)
     quote_line = re.sub('\'{2,3}', '"', quote_line)
     quote_line = re.sub('<br> ?', '\n', quote_line)
-    #print(quote_line)
+
     return Quote(id=id, quote=quote_line, author=author, cats=cats)
 
 def parse_cats_page(xml: minidom.Document, start_tag:str) -> list:
@@ -141,6 +141,7 @@ def dump_xml(xml_data:list, to_file=False, file_name=''):
         file.write(XML_ROOT_BTM)
     else:
         print(XML_HEAD + XML_ROOT_TOP)
+
         for data in xml_data:
             print(data.to_xml())
 

@@ -15,15 +15,17 @@ from urllib import request
 USER_AGENT = 'User-agent', 'Mozilla/5.0'
 
 # wiki url related constants
-LANG = 'en'
-URL = 'Mark Twain'
+LANG = 'en' # language to fetch from
+URL = 'Mark Twain' # page to fetch from for now until done from cmd args
 ARTICLE_URL = 'http://{}.wikiquote.org/w/api.php?format=xml&action=query&titles={}&prop=revisions&rvprop=content'
 CAT_URL = 'http://{}.wikiquote.org/w/api.php?format=xml&action=query&titles={}&prop=categories&list=allcategories'
 
-QUOTE_XML_TAG = 'rev'
-CAT_XML_TAG = 'cl'
-TITLE_TAG = 'page'
+# each tells the parser where to start looking for data in the xml tags
+QUOTE_XML_TAG = 'rev' # where to start looking for quotes
+CAT_XML_TAG = 'cl' # where to grab the categories for the quotes
+TITLE_TAG = 'page' # where to fetch the author/title of the page
 
+# for dumping the xml to a file or stdout
 XML_HEAD = '<?xml version="1.0" encoding="UTF-8"?>'
 XML_ROOT_TOP = '<quotes>'
 XML_ROOT_BTM = '</quotes>'
@@ -59,6 +61,7 @@ def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
     #                        \|(?P<name>[^\]]+)]] # stop at \| and capture this part""", '\g<name>', matches.group(1))
 
     if quote_line.find('[['): # expensive to do regex below so avoid if possible
+        # convert crap like [Ulysses S. Grant|Grant] to Grant or [w:Philip Sheridan|Sheridan] to Sheridan
         quote_line = re.sub('[w:]{0,2}\[\[[^|]+\|(?P<name>[^]]+)]]', '\g<name>', quote_line)
 
     # remove some other crap found in the quotes
@@ -116,9 +119,8 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
             quotes.append(format_quote(quote_line=matches.group(1), id=i, author=author, cats=cats))
             i += 1
 
-
         if line.startswith("{{misattributed"):
-            break
+            break # don't care about getting anything in misattributed and below
 
     return quotes
 
@@ -139,7 +141,7 @@ def dump_xml(xml_data:list, to_file=False, file_name=''):
             file.write(data.to_xml())
 
         file.write(XML_ROOT_BTM)
-    else:
+    else: # dump to stdout/console
         print(XML_HEAD + XML_ROOT_TOP)
 
         for data in xml_data:

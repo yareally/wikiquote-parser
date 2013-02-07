@@ -16,7 +16,7 @@ USER_AGENT = 'User-agent', 'Mozilla/5.0'
 
 # wiki url related constants
 LANG = 'en' # language to fetch from
-URL = 'Mark Twain' # page to fetch from for now until done from cmd args
+URL = 'Thomas Jefferson' # page to fetch from for now until done from cmd args
 ARTICLE_URL = 'http://{}.wikiquote.org/w/api.php?format=xml&action=query&titles={}&prop=revisions&rvprop=content'
 CAT_URL = 'http://{}.wikiquote.org/w/api.php?format=xml&action=query&titles={}&prop=categories&list=allcategories'
 
@@ -67,6 +67,7 @@ def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
     # remove some other crap found in the quotes
     quote_line = re.sub('\[\[|\]\]|<!-- ?| ?-->', '', quote_line)
     quote_line = re.sub('\'{2,3}', '"', quote_line)
+    quote_line = re.sub('"{2,}', '"', quote_line)
     quote_line = re.sub('<br> ?', '\n', quote_line)
 
     return Quote(id=id, quote=quote_line, author=author, cats=cats)
@@ -82,7 +83,7 @@ def parse_cats_page(xml: minidom.Document, start_tag:str) -> list:
     elements = xml.getElementsByTagName(start_tag)
     categories = []
     # categories only useful to wikipedia. Filter them out.
-    filter_list = ['People cleanup', 'Pages with inadequate citations']
+    filter_list = ['People cleanup', 'Pages with inadequate citations', 'Pages with broken file links']
 
     for cat_elem in elements:
         category = cat_elem.getAttribute('title').split(':')[1]
@@ -120,7 +121,7 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
             quotes.append(format_quote(quote_line=matches.group(1), id=i, author=author, cats=cats))
             i += 1
 
-        if line.startswith("{{misattributed"):
+        if re.match('\{\{misattributed|\{\{disputed', line, re.IGNORECASE):
             break # don't care about getting anything in misattributed and below
 
     return quotes

@@ -153,4 +153,4 @@ if __name__ == "__main__":
     cats_page = fetch_page(CAT_URL.format(LANG, request.quote(URL)))
     cat_list = parse_cats_page(cats_page, CAT_XML_TAG)
     quote_list = parse_quote_page(quote_page, QUOTE_XML_TAG, cat_list)
-    dump_xml(quote_list, True)
+    dump_xml(quote_list, to_file=True)

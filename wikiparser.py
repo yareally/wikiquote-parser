@@ -61,7 +61,7 @@ def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
     if quote_line.find('[['): # expensive to do regex below so avoid if possible
         quote_line = re.sub('[w:]{0,2}\[\[[^|]+\|(?P<name>[^]]+)]]', '\g<name>', quote_line)
 
-        # remove some other crap found in the quotes
+    # remove some other crap found in the quotes
     quote_line = re.sub('\[\[|\]\]|<!-- ?| ?-->', '', quote_line)
     quote_line = re.sub('\'{2,3}', '"', quote_line)
     quote_line = re.sub('<br> ?', '\n', quote_line)

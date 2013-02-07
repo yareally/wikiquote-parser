@@ -7,9 +7,9 @@ from quote import Quote
 __author__ = 'Wes Lanning'
 
 import sys
+import argparse
 from xml.dom import minidom
 from urllib import request
-
 
 # needed to properly fetch pages
 USER_AGENT = 'User-agent', 'Mozilla/5.0'
@@ -30,6 +30,18 @@ XML_HEAD = '<?xml version="1.0" encoding="UTF-8"?>'
 XML_ROOT_TOP = '<quotes>'
 XML_ROOT_BTM = '</quotes>'
 
+def cmd_line_parse() -> argparse.Namespace:
+    """
+    Parses the command line args
+    @return: the parsed args namespace
+    """
+
+    parser = argparse.ArgumentParser(description='Parse a wikiquote URL')
+    parser.add_argument('--file', dest='filename', metavar='FILE', help='Dump to file instead of stdout. usage [optional]: filename.xml')
+    parser.add_argument('--url', metavar='URL', dest='url_title', help='usage [optional]: "Mark Twain"')
+    parser.add_argument('--language', metavar='LANG', dest='language', help='usage [optional]: en')
+
+    return parser.parse_args()
 
 def fetch_page(url: str) -> minidom.Document:
     """
@@ -43,8 +55,7 @@ def fetch_page(url: str) -> minidom.Document:
     # gets the the body contents of the file without outer tags
     return minidom.parse(infile)
 
-
-def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
+def format_quote(quote_line:str, id:int, author:str, cats:list) -> Quote:
     """
     Converts a quote string to a quote object
     @param quote_line: the quote string
@@ -148,11 +159,23 @@ def dump_xml(xml_data:list, to_file=False, file_name='') -> None:
 
         print(XML_ROOT_BTM)
 
-
 if __name__ == "__main__":
+
+    args = cmd_line_parse()
+    filename = ''
+    to_file = False
+
+    if args.filename:
+        filename = args.filename
+        to_file = True
+    if args.language:
+        LANG = args.language
+    if args.url_title:
+        URL = args.url_title
 
     quote_page = fetch_page(ARTICLE_URL.format(LANG, request.quote(URL)))
     cats_page = fetch_page(CAT_URL.format(LANG, request.quote(URL)))
     cat_list = parse_cats_page(cats_page, CAT_XML_TAG)
     quote_list = parse_quote_page(quote_page, QUOTE_XML_TAG, cat_list)
-    dump_xml(quote_list, to_file=True)
+    dump_xml(quote_list, to_file, filename)
+

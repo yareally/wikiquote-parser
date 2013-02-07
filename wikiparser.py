@@ -51,7 +51,7 @@ def format_quote(quote_line:str, id:int, author: str, cats:list) -> Quote:
     @param cats: list of categories the quotes fall under
     @return: a Quote object
     """
-
+    # TODO: group the regexs below into one with backreferences (maybe)
     # also, this should work, but doesn't because of the white space, so workaround is to remove white space
     # and use the uncommented blob >:(
     # quote_line = re.sub(r"""[w:]{0,2}           # optionally look for w:
@@ -113,8 +113,6 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
         matches = re.match('\* ([\S ]+)', line)
 
         if matches:
-            # TODO: group the regexs below into one with backreferences (maybe)
-
             quotes.append(format_quote(quote_line=matches.group(1), id=i, author=author, cats=cats))
             i += 1
 

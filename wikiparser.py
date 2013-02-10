@@ -50,7 +50,7 @@ def cmd_line_parse() -> argparse.Namespace:
 def fetch_page(url: str) -> minidom.Document:
     """
     Fetches a wikiquote page from a url using the wikiquote api
-    @param url: the wiki url to fetch from (e.g. U{http://en.wikiquote.org/w/api.php?format=json&action=query&titles=Mark%20Twain&prop=revisions&rvprop=content})
+    @param url: the wiki url to fetch from
     @return: the xml DOM
     """
     url_opener = request.build_opener()
@@ -206,8 +206,6 @@ if __name__ == "__main__":
         default_dir = '{}/{}'.format(QUOTE_DIR, lang)
         if not os.path.exists(default_dir):
             os.makedirs(default_dir)
-        print(request.quote(page_title))
-        print(parse.quote(page_title))
 
         quote_page = fetch_page(ARTICLE_URL.format(lang, request.quote(page_title)))
         cats_page = fetch_page(CAT_URL.format(lang, request.quote(page_title)))

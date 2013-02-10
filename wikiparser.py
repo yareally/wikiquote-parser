@@ -1,28 +1,33 @@
 #!/usr/bin/env python
 # coding=utf-8
 """ Wikiquote api parser, yay """
-import re
-from quote import Quote
-
 __author__ = 'Wes Lanning'
 
-import sys
+import os
+import re
+from quote import Quote
 import argparse
 from xml.dom import minidom
 from urllib import request
+from urllib import parse
+
 
 # needed to properly fetch pages
 USER_AGENT = 'User-agent', 'Mozilla/5.0'
 
+QUOTE_DIR = 'quotes'
+
 # wiki url related constants
-LANG = 'en' # language to fetch from
-URL = 'Thomas Jefferson' # page to fetch from for now until done from cmd args
+DEFAULT_LANG = 'en' # language to fetch from
+DEFAULT_PAGE = 'Mark Twain' # title of the page to fetch from. Wiki Titles are capitalized
 ARTICLE_URL = 'http://{}.wikiquote.org/w/api.php?format=xml&action=query&titles={}&prop=revisions&rvprop=content'
 CAT_URL = 'http://{}.wikiquote.org/w/api.php?format=xml&action=query&titles={}&prop=categories&list=allcategories'
+LANG_URL = 'http://{}.wikiquote.org/w/api.php?format=xml&action=query&titles={}&prop=langlinks&lllimit=500'
 
 # each tells the parser where to start looking for data in the xml tags
-QUOTE_XML_TAG = 'rev' # where to start looking for quotes
-CAT_XML_TAG = 'cl' # where to grab the categories for the quotes
+QUOTE_TAG = 'rev' # where to start looking for quotes
+CAT_TAG = 'cl' # where to grab the categories for the quotes
+LANG_TAG = 'll' # where to grab the possible languages for the quotes
 TITLE_TAG = 'page' # where to fetch the author/title of the page
 
 # for dumping the xml to a file or stdout
@@ -40,7 +45,6 @@ def cmd_line_parse() -> argparse.Namespace:
     parser.add_argument('--file', dest='filename', metavar='FILE', help='Dump to file instead of stdout. usage [optional]: filename.xml')
     parser.add_argument('--url', metavar='URL', dest='url_title', help='usage [optional]: "Mark Twain"')
     parser.add_argument('--language', metavar='LANG', dest='language', help='usage [optional]: en')
-
     return parser.parse_args()
 
 def fetch_page(url: str) -> minidom.Document:
@@ -55,11 +59,11 @@ def fetch_page(url: str) -> minidom.Document:
     # gets the the body contents of the file without outer tags
     return minidom.parse(infile)
 
-def format_quote(quote_line:str, id:int, author:str, cats:list) -> Quote:
+def format_quote(quote_line:str, quote_id:int, author:str, cats:list) -> Quote:
     """
     Converts a quote string to a quote object
     @param quote_line: the quote string
-    @param id: the id for the quote
+    @param quote_id: the id for the quote
     @param author: the quote author
     @param cats: list of categories the quotes fall under
     @return: a Quote object
@@ -80,7 +84,7 @@ def format_quote(quote_line:str, id:int, author:str, cats:list) -> Quote:
     quote_line = re.sub('"{2,}|\'{2,3}', '"', quote_line)
     quote_line = re.sub('<br> ?', '\n', quote_line)
 
-    return Quote(id=id, quote=quote_line, author=author, cats=cats)
+    return Quote(id=quote_id, quote=quote_line, author=author, cats=cats)
 
 def parse_cats_page(xml: minidom.Document, start_tag:str) -> list:
     """
@@ -93,7 +97,7 @@ def parse_cats_page(xml: minidom.Document, start_tag:str) -> list:
     elements = xml.getElementsByTagName(start_tag)
     categories = []
     # categories only useful to wikipedia. Filter them out.
-    filter_list = ['People cleanup', 'Pages with inadequate citations', 'Pages with broken file links']
+    filter_list = ['People cleanup', 'Pages with inadequate citations', 'Pages with broken file links', 'Articles with unsourced statements']
 
     for cat_elem in elements:
         category = cat_elem.getAttribute('title').split(':')[1]
@@ -102,6 +106,23 @@ def parse_cats_page(xml: minidom.Document, start_tag:str) -> list:
             categories.append(category)
 
     return categories
+
+
+def parse_lang_page(xml: minidom.Document, start_tag:str) -> dict:
+
+    """
+    Grabs all the various languages a page is translated to.
+    @param xml:
+    @param start_tag:
+    @return: dict of language keys and author name as value in iso formatting (e.g. af, ar, da, etc)
+    """
+    elements = xml.getElementsByTagName(start_tag)
+    languages = {}
+
+    for lang_elem in elements:
+        languages[lang_elem.getAttribute('lang')] = lang_elem.firstChild.nodeValue
+
+    return languages
 
 def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag=TITLE_TAG) -> list:
     """
@@ -126,7 +147,7 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
         matches = re.match('\* ([\S ]+)', line)
 
         if matches:
-            quotes.append(format_quote(quote_line=matches.group(1), id=i, author=author, cats=cats))
+            quotes.append(format_quote(quote_line=matches.group(1), quote_id=i, author=author, cats=cats))
             i += 1
 
         if re.match('\{\{misattributed|\{\{disputed', line, re.IGNORECASE):
@@ -143,7 +164,7 @@ def dump_xml(xml_data:list, to_file=False, file_name='') -> None:
     """
 
     if to_file:
-        file_name = file_name if file_name else xml_data[0]._author + '.xml'
+        file_name = file_name if file_name else xml_data[0]._author.replace(' ', '_') + '.xml'
         file = open(file_name, 'w')
         file.write(XML_HEAD + XML_ROOT_TOP)
 
@@ -163,19 +184,40 @@ if __name__ == "__main__":
 
     args = cmd_line_parse()
     filename = ''
-    to_file = False
+    to_file = True
 
     if args.filename:
         filename = args.filename
         to_file = True
     if args.language:
-        LANG = args.language
+        DEFAULT_LANG = args.language
     if args.url_title:
-        URL = args.url_title
+        DEFAULT_PAGE = args.url_title
+    # default dir for quotes to go to
+    if not os.path.exists(QUOTE_DIR):
+        os.makedirs(QUOTE_DIR)
 
-    quote_page = fetch_page(ARTICLE_URL.format(LANG, request.quote(URL)))
-    cats_page = fetch_page(CAT_URL.format(LANG, request.quote(URL)))
-    cat_list = parse_cats_page(cats_page, CAT_XML_TAG)
-    quote_list = parse_quote_page(quote_page, QUOTE_XML_TAG, cat_list)
-    dump_xml(quote_list, to_file, filename)
+    # fetch all possible languages first
+    lang_page = fetch_page(LANG_URL.format(DEFAULT_LANG, request.quote(DEFAULT_PAGE)))
+    lang_dict = parse_lang_page(lang_page, LANG_TAG)
+    lang_dict['en'] = DEFAULT_PAGE
+
+    for lang, page_title in lang_dict.items():
+        default_dir = '{}/{}'.format(QUOTE_DIR, lang)
+        if not os.path.exists(default_dir):
+            os.makedirs(default_dir)
+        print(request.quote(page_title))
+        print(parse.quote(page_title))
+
+        quote_page = fetch_page(ARTICLE_URL.format(lang, request.quote(page_title)))
+        cats_page = fetch_page(CAT_URL.format(lang, request.quote(page_title)))
+
+        cat_list = parse_cats_page(cats_page, CAT_TAG)
+        quote_list = parse_quote_page(quote_page, QUOTE_TAG, cat_list)
+
+        if quote_list:
+            dump_xml(quote_list, to_file, '{}/{}.xml'.format(default_dir, page_title))
+
+    #print(lang_list)
+
 

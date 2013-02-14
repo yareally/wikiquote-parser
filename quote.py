@@ -47,3 +47,4 @@ class Quote:
         return xml_skeleton.format(self._id, escape(self._author),
             escape('|'.join(self._cats)), escape(self.ref), escape(self._quote))
 
+

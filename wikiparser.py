@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # coding=utf-8
-""" Wikiquote api parser, yay """
+""" Wikiquote api parser, yay
+    assumptions:
+    - no trailing / on directories or URLs
+    - using Python 3+
+"""
+
 __author__ = 'Wes Lanning'
 
 import os
 import re
+from util import dump_xml, sanitize_filename, save_foreign_title_ref
 from quote import Quote
 import argparse
 from xml.dom import minidom
@@ -28,10 +34,6 @@ CAT_TAG = 'cl' # where to grab the categories for the quotes
 LANG_TAG = 'll' # where to grab the possible languages for the quotes
 TITLE_TAG = 'page' # where to fetch the author/title of the page
 
-# for dumping the xml to a file or stdout
-XML_HEAD = '<?xml version="1.0" encoding="UTF-8"?>'
-XML_ROOT_TOP = '<quotes>'
-XML_ROOT_BTM = '</quotes>'
 
 def cmd_line_parse() -> argparse.Namespace:
     """
@@ -153,30 +155,9 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
 
     return quotes
 
-def dump_xml(xml_data:list, to_file=False, file_name='') -> None:
-    """
-    Dumps xml data to stdout or to a file
-    @param xml_data: list of xml elements
-    @param to_file: if not given, contents dumped to stdout
-    @param file_name: if not given, it's taken from xml_data
-    """
 
-    if to_file:
-        file_name = file_name if file_name else xml_data[0]._author.replace(' ', '_') + '.xml'
-        file = open(file_name, 'w')
-        file.write(XML_HEAD + XML_ROOT_TOP)
 
-        for data in xml_data:
-            file.write(data.to_xml())
 
-        file.write(XML_ROOT_BTM)
-    else: # dump to stdout/console
-        print(XML_HEAD + XML_ROOT_TOP)
-
-        for data in xml_data:
-            print(data.to_xml())
-
-        print(XML_ROOT_BTM)
 
 if __name__ == "__main__":
 
@@ -213,7 +194,10 @@ if __name__ == "__main__":
         quote_list = parse_quote_page(quote_page, QUOTE_TAG, cat_list)
 
         if quote_list:
-            dump_xml(quote_list, to_file, '{}/{}.xml'.format(default_dir, page_title))
+            # some wiki titles have a / like http://en.wikiquote.org/wiki/Either/Or
+            page_title = sanitize_filename(page_title)
+            dump_xml(xml_data=quote_list, to_file=to_file, langs=lang_dict, filename='{}/{}.xml'.format(default_dir, page_title))
+            save_foreign_title_ref(new_titles=lang_dict, filename='{}/{}.pkl'.format(default_dir, 'lang'))
 
     #print(lang_list)
 

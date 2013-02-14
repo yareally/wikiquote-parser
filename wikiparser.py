@@ -78,7 +78,7 @@ def format_quote(quote_line:str, quote_id:int, author:str, cats:list) -> Quote:
     if quote_line.find('[['): # expensive to do regex below so avoid if possible
         # convert crap like [Ulysses S. Grant|Grant] to Grant or [w:Philip Sheridan|Sheridan] to Sheridan
         quote_line = re.sub('[w:]{0,2}\[\[[^|]+\|(?P<name>[^]]+)]]', '\g<name>', quote_line)
-        quote_line = re.sub('{{[\S\s]+}}(?P<name>[\s\S]+)', '\g<name>', quote_line)
+        quote_line = re.sub('\{\{[\S ]+}}(?P<name>[\S ]+)', '\g<name>', quote_line)
 
     # remove some other crap found in the quotes
     quote_line = re.sub('\[\[|\]\]|<!-- ?| ?-->', '', quote_line)
@@ -144,8 +144,12 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
     quotes = []
 
     for line in page_data:
-        # remove the denotation chars for a quote
-        matches = re.match('\* ([\S ]+)', line) or re.match('# ([^\']+)', line) or re.match('\*([^*]+)', line)
+        # remove the denotation chars for a quote  {\{citat\ |
+        matches = re.match('\* ([\S ]+)', line)\
+                      or re.match('# ([^\']+)', line) \
+                      or re.match('\*([^*]+)', line) \
+                      or re.match('\{\{citat(?:ion)?\|([\S ]+)', line)
+
         # crap to remove in other pages/languages
         #or re.match('# ([^\']+)', line) or re.match('\*([^*]+)', line)
 
@@ -157,10 +161,6 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
             break # don't care about getting anything in misattributed and below
 
     return quotes
-
-
-
-
 
 if __name__ == "__main__":
 

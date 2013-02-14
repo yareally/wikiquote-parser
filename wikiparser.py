@@ -78,6 +78,7 @@ def format_quote(quote_line:str, quote_id:int, author:str, cats:list) -> Quote:
     if quote_line.find('[['): # expensive to do regex below so avoid if possible
         # convert crap like [Ulysses S. Grant|Grant] to Grant or [w:Philip Sheridan|Sheridan] to Sheridan
         quote_line = re.sub('[w:]{0,2}\[\[[^|]+\|(?P<name>[^]]+)]]', '\g<name>', quote_line)
+        quote_line = re.sub('{{[\S\s]+}}(?P<name>[\s\S]+)', '\g<name>', quote_line)
 
     # remove some other crap found in the quotes
     quote_line = re.sub('\[\[|\]\]|<!-- ?| ?-->', '', quote_line)
@@ -144,7 +145,9 @@ def parse_quote_page(xml: minidom.Document, start_tag:str, cats: list, title_tag
 
     for line in page_data:
         # remove the denotation chars for a quote
-        matches = re.match('\* ([\S ]+)', line)
+        matches = re.match('\* ([\S ]+)', line) or re.match('# ([^\']+)', line) or re.match('\*([^*]+)', line)
+        # crap to remove in other pages/languages
+        #or re.match('# ([^\']+)', line) or re.match('\*([^*]+)', line)
 
         if matches:
             quotes.append(format_quote(quote_line=matches.group(1), quote_id=i, author=author, cats=cats))
@@ -179,7 +182,15 @@ if __name__ == "__main__":
     # fetch all possible languages first
     lang_page = fetch_page(LANG_URL.format(DEFAULT_LANG, request.quote(DEFAULT_PAGE)))
     lang_dict = parse_lang_page(lang_page, LANG_TAG)
-    lang_dict['en'] = DEFAULT_PAGE
+    lang_dict[DEFAULT_LANG] = DEFAULT_PAGE
+
+    # where to store the mappings for pages also in foreign languages
+    lang_dir = '{}/{}'.format(QUOTE_DIR, 'languages')
+
+    if not os.path.exists(lang_dir):
+        os.makedirs(lang_dir)
+
+    save_foreign_title_ref(new_titles=lang_dict, filename='{}/{}.pkl'.format(lang_dir, sanitize_filename(DEFAULT_PAGE)))
 
     for lang, page_title in lang_dict.items():
         default_dir = '{}/{}'.format(QUOTE_DIR, lang)
@@ -197,7 +208,7 @@ if __name__ == "__main__":
             # some wiki titles have a / like http://en.wikiquote.org/wiki/Either/Or
             page_title = sanitize_filename(page_title)
             dump_xml(xml_data=quote_list, to_file=to_file, langs=lang_dict, filename='{}/{}.xml'.format(default_dir, page_title))
-            save_foreign_title_ref(new_titles=lang_dict, filename='{}/{}.pkl'.format(default_dir, 'lang'))
+
 
     #print(lang_list)
 

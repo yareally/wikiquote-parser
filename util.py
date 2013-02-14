@@ -59,8 +59,8 @@ def save_foreign_title_ref(new_titles:dict, filename:str):
     Map xx/author-name-in-foreign-language.xml to en/author-name.xml
     Does this by creating a file of key:value pairs in each language dir
 
-    @param new_titles: dictionary with language -> name pairs
-    @param filename: where the references for this language are stored (e.g. quotes/de/refs.pkl)
+    @param new_titles: dictionary with iso language -> name pairs
+    @param filename: where the references for this language are stored (e.g. quotes/languages/english_page_tile.pkl)
     """
 
     language_ref = {}

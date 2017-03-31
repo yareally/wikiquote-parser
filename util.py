@@ -1,7 +1,10 @@
 # coding=utf-8
 """ Wikiquote api parser utility functions, yay """
-import os
 import pickle
+from xml.sax.saxutils import escape
+
+import os
+import json
 
 __author__ = 'Wes Lanning'
 
@@ -10,9 +13,9 @@ XML_HEAD = '<?xml version="1.0" encoding="UTF-8"?>'
 XML_ROOT_TOP = '<quotes languages="{}">'
 XML_ROOT_BTM = '</quotes>'
 
+JSON_ROOT_TOP = '{quotes'
 
-
-def sanitize_filename(filename:str) -> str:
+def sanitize_filename(filename: str) -> str:
     """
 
     @param filename:
@@ -22,7 +25,7 @@ def sanitize_filename(filename:str) -> str:
     return filename
 
 
-def dump_xml(xml_data:list, to_file=False, langs=dict, filename='') -> None:
+def dump_xml(xml_data: list, to_file=False, langs=dict, filename='') -> None:
     """
     Dumps xml data to stdout or to a file
     @param xml_data: list of xml elements
@@ -45,7 +48,7 @@ def dump_xml(xml_data:list, to_file=False, langs=dict, filename='') -> None:
 
         file.write(XML_ROOT_BTM)
         file.close()
-    else: # dump to stdout/console
+    else:  # dump to stdout/console
         print(XML_HEAD + xml_root_elem)
 
         for data in xml_data:
@@ -54,7 +57,18 @@ def dump_xml(xml_data:list, to_file=False, langs=dict, filename='') -> None:
         print(XML_ROOT_BTM)
 
 
-def save_foreign_title_ref(new_titles:dict, filename:str):
+def xml_escape(data):
+    return escape(data, entities={
+        "'": '&apos;',
+        '"': '&quot;'
+    })
+
+
+#def dump_json(xml_data: list, to_file=False, langs=dict, filename='') -> None:
+
+
+
+def save_foreign_title_ref(new_titles: dict, filename: str):
     """
     Map xx/author-name-in-foreign-language.xml to en/author-name.xml
     Does this by creating a file of key:value pairs in each language dir
